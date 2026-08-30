@@ -377,25 +377,27 @@
       margin-bottom: 8px;
     }
 
-    .home-hero-card p {
+       .home-hero-card p {
       font-size: 12.5px;
       color: #94A3B8;
       line-height: 1.5;
-      max-width: 65%;
-      margin-bottom: 20px;
+      max-width: calc(100% - 90px);
+      margin-bottom: 16px;
     }
 
     .hero-3d-visual {
       position: absolute;
-      right: 8px;
-      top: 14px;
-      width: 130px;
-      height: 130px;
+      right: 6px;
+      top: 12px;
+      width: 86px;
+      height: 86px;
       pointer-events: none;
       display: flex;
       align-items: center;
       justify-content: center;
+      opacity: 0.95;
     }
+
 
     /* 4-Step Icon Progress Row in Hero */
     .hero-steps-line {
@@ -2274,7 +2276,8 @@
 
           <!-- 3D Bag & Phone Illustration -->
           <div class="hero-3d-visual">
-            <svg viewBox="0 0 120 120" width="110" height="110">
+                        <svg viewBox="0 0 120 120" width="82" height="82">
+
               <!-- Grocery Bag -->
               <rect x="25" y="38" width="70" height="72" rx="10" fill="#E2A03F" stroke="#C47E20" stroke-width="2"/>
               <path d="M40 38 C40 22, 80 22, 80 38" fill="none" stroke="#A86510" stroke-width="4" stroke-linecap="round"/>
