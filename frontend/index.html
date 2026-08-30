@@ -1,0 +1,3855 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="application-name" content="FASTSHOP">
+  <title>ShopFast (FASTSHOP) — Smart Self-Checkout & Queue Intelligence</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Scanning, QR & Animation Libraries -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #FF5500;
+      --primary-hover: #E04B00;
+      --primary-active: #C83F00;
+      --primary-light: #FFF2EB;
+      --primary-subtle: #FFF7ED;
+      --primary-glow: rgba(255, 85, 0, 0.28);
+
+      --navy-dark: #0A1128;
+      --navy-card: #0F172A;
+      --navy-surface: #1E293B;
+      --navy-border: #334155;
+
+      --accent: #10B981;
+      --accent-dark: #15803D;
+      --accent-light: #F0FDF4;
+      --accent-border: #BBF7D0;
+
+      --purple-main: #7C3AED;
+      --purple-light: #FAF5FF;
+      --purple-border: #E9D5FF;
+      --purple-dark: #581C87;
+
+      --blue-main: #2563EB;
+      --blue-light: #EFF6FF;
+      --blue-border: #DBEAFE;
+
+      --warn-main: #D97706;
+      --warn-light: #FFFBEB;
+      --warn-border: #FEF3C7;
+
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --surface-subtle: #F1F5F9;
+      --border: #E2E8F0;
+      --border-strong: #CBD5E1;
+
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --text-subtle: #94A3B8;
+
+      --radius-xs: 6px;
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 26px;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+      --shadow-lg: 0 12px 30px rgba(15, 23, 42, 0.12);
+      --shadow-xl: 0 20px 45px -10px rgba(15, 23, 42, 0.2);
+
+      --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      font-family: var(--font-main);
+      background-color: #F1F5F9;
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.45;
+      overflow-x: hidden;
+    }
+
+    /* Mobile-First Container Frame */
+    .app-frame {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background-color: var(--bg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 60px rgba(15, 23, 42, 0.09);
+    }
+
+    @media (min-width: 520px) {
+      body {
+        padding: 24px 0;
+      }
+      .app-frame {
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        border: 1px solid var(--border-strong);
+        min-height: calc(100vh - 48px);
+      }
+    }
+
+    button {
+      font-family: inherit;
+      border: none;
+      background: none;
+      cursor: pointer;
+      outline: none;
+      transition: transform 0.15s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      touch-action: manipulation;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* =========================================================================
+       TOP APP HEADER
+       ========================================================================= */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 21px;
+      letter-spacing: -0.04em;
+      color: var(--text-main);
+      padding: 6px 0;
+    }
+
+    .brand-bolt {
+      color: var(--primary);
+      font-size: 22px;
+      line-height: 1;
+      display: inline-block;
+      filter: drop-shadow(0 2px 4px var(--primary-glow));
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Store Selector Pill */
+    .store-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      position: relative;
+      min-height: 38px;
+      transition: border-color 0.15s ease;
+    }
+
+    .store-pill:hover {
+      border-color: var(--border-strong);
+    }
+
+    .store-pill select {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .store-pill .chevron {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .header-icon-btn {
+      min-width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      background: white;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      color: var(--text-main);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .header-icon-btn:hover {
+      background: var(--surface-subtle);
+      border-color: var(--border-strong);
+    }
+
+    .cart-badge-pill {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--primary);
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+      box-shadow: 0 2px 5px var(--primary-glow);
+    }
+
+    .nav-link-btn {
+      color: var(--blue-main);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      padding: 6px 8px;
+      border-radius: var(--radius-xs);
+    }
+
+    .nav-link-btn:hover {
+      background: var(--blue-light);
+    }
+
+    /* =========================================================================
+       SCREENS CONTAINER
+       ========================================================================= */
+    .screen-content {
+      flex: 1;
+      padding: 16px 16px 88px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen {
+      display: none;
+      animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Screen Title Headers */
+    .screen-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 8px;
+    }
+
+    .screen-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #1E293B;
+      line-height: 1.2;
+    }
+
+    .screen-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .pill-tag {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: var(--radius-full);
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================================
+       SCREEN 1: HOME SCREEN STYLES (Image 3)
+       ========================================================================= */
+    .home-hero-card {
+      background: linear-gradient(145deg, #0A142A 0%, #152238 100%);
+      border-radius: var(--radius-lg);
+      padding: 22px 18px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 25px rgba(10, 20, 42, 0.25);
+    }
+
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #FF7733;
+      margin-bottom: 6px;
+    }
+
+    .home-hero-card h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .home-hero-card p {
+      font-size: 12.5px;
+      color: #94A3B8;
+      line-height: 1.5;
+      max-width: 65%;
+      margin-bottom: 20px;
+    }
+
+    .hero-3d-visual {
+      position: absolute;
+      right: 8px;
+      top: 14px;
+      width: 130px;
+      height: 130px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 4-Step Icon Progress Row in Hero */
+    .hero-steps-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      position: relative;
+    }
+
+    .hero-step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+      cursor: pointer;
+    }
+
+    .step-circle-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: white;
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: transform 0.15s ease;
+    }
+
+    .hero-step-item:hover .step-circle-icon {
+      transform: translateY(-2px);
+    }
+
+    .step-text-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #CBD5E1;
+      letter-spacing: 0.04em;
+    }
+
+    .steps-connector-dots {
+      position: absolute;
+      top: 36px;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.4) 33%, rgba(255, 255, 255, 0) 0%);
+      background-position: top;
+      background-size: 8px 2px;
+      background-repeat: repeat-x;
+      z-index: 1;
+    }
+
+    /* Big Orange Start Scanning CTA */
+    .start-scan-box {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .btn-orange-cta {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      min-height: 52px;
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 16px var(--primary-glow);
+    }
+
+    .btn-orange-cta:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-orange-cta:active {
+      background: var(--primary-active);
+    }
+
+    .scan-cta-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    /* How ShopFast Works Card */
+    .info-section-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-heading-sm {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 14px;
+    }
+
+    .feature-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--surface-subtle);
+    }
+
+    .feature-row:last-of-type {
+      border-bottom: none;
+    }
+
+    .feature-icon-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .feature-icon-circle.blue {
+      background: #EFF6FF;
+      color: #2563EB;
+    }
+
+    .feature-icon-circle.peach {
+      background: #FFF2EB;
+      color: #FF5500;
+    }
+
+    .feature-icon-circle.green {
+      background: #ECFDF5;
+      color: #10B981;
+    }
+
+    .feature-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .feature-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 1px;
+      line-height: 1.4;
+    }
+
+    .card-footer-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--blue-main);
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 10px;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .card-footer-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Security Card Banner */
+    .security-badge-card {
+      background: #F0F7FF;
+      border: 1px solid #D0E4FF;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1E3A8A;
+      line-height: 1.4;
+    }
+
+    .security-badge-card .shield-icon {
+      font-size: 24px;
+      color: #2563EB;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================================
+       SCREEN 2: SCAN PRODUCT SCREEN (Image 1)
+       ========================================================================= */
+    .scanner-view-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .camera-frame-box {
+      background: #0B0F19;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow-md);
+      min-height: 310px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #reader {
+      width: 100% !important;
+      height: 310px !important;
+      position: absolute;
+      inset: 0;
+      object-fit: cover;
+    }
+
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    /* Target Scanner Reticle & Corners */
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .target-reticle {
+      width: 250px;
+      height: 200px;
+      position: relative;
+    }
+
+    /* Orange Corner Brackets */
+    .corner-bracket {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: #FF5500;
+      border-style: solid;
+      border-width: 0;
+    }
+
+    .corner-tl {
+      top: 0;
+      left: 0;
+      border-top-width: 4px;
+      border-left-width: 4px;
+      border-top-left-radius: 12px;
+    }
+
+    .corner-tr {
+      top: 0;
+      right: 0;
+      border-top-width: 4px;
+      border-right-width: 4px;
+      border-top-right-radius: 12px;
+    }
+
+    .corner-bl {
+      bottom: 0;
+      left: 0;
+      border-bottom-width: 4px;
+      border-left-width: 4px;
+      border-bottom-left-radius: 12px;
+    }
+
+    .corner-br {
+      bottom: 0;
+      right: 0;
+      border-bottom-width: 4px;
+      border-right-width: 4px;
+      border-bottom-right-radius: 12px;
+    }
+
+    /* Red/Orange Laser Scanner Beam */
+    .laser-beam {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #FF5500, #FFAA00, #FF5500, transparent);
+      box-shadow: 0 0 14px 2px #FF5500;
+      animation: laserSweep 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes laserSweep {
+      0% {
+        top: 15%;
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        top: 85%;
+        opacity: 0.6;
+      }
+    }
+
+    /* Camera Bottom Controls inside Video Frame */
+    .camera-hud-bottom {
+      position: relative;
+      z-index: 20;
+      margin-top: auto;
+      background: rgba(10, 15, 25, 0.78);
+      backdrop-filter: blur(8px);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: white;
+      font-size: 12px;
+    }
+
+    .camera-status-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+
+    .camera-green-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      animation: pulseDot 1.5s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .torch-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.22);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .torch-btn.active {
+      background: #FF5500;
+      box-shadow: 0 0 10px #FF5500;
+    }
+
+    /* Floating "ADDED TO CART" Notification Card */
+    .added-cart-popup {
+      background: white;
+      border: 1.5px solid #E2E8F0;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      animation: slideUpPopup 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUpPopup {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .popup-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .popup-check-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #DCFCE7;
+      color: #16A34A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .popup-badge {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #16A34A;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .popup-item-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .popup-item-price {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 1px;
+    }
+
+    .popup-img-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: var(--radius-sm);
+      object-fit: contain;
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      padding: 4px;
+    }
+
+    .popup-ready-link {
+      font-size: 12px;
+      color: #15803D;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #E2E8F0;
+      cursor: pointer;
+    }
+
+    /* Warning Alert Banner (Peach/Orange) */
+    .scan-warning-card {
+      background: #FFF7ED;
+      border: 1px solid #FFEDD5;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .scan-warning-text {
+      flex: 1;
+    }
+
+    .scan-warning-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #EA580C;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .scan-warning-body {
+      font-size: 12px;
+      color: #431407;
+      line-height: 1.4;
+    }
+
+    .scan-warning-body p {
+      margin-bottom: 6px;
+    }
+
+    .scan-warning-body p:last-child {
+      margin-bottom: 0;
+      color: #7C2D12;
+    }
+
+    .scan-warning-lock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 80px;
+      flex-shrink: 0;
+    }
+
+    .lock-circle-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #FFEDD5;
+      color: #EA580C;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .lock-caption {
+      font-size: 10px;
+      font-weight: 800;
+      color: #EA580C;
+      line-height: 1.2;
+    }
+
+    /* Progress Stepper Bar in Scanner */
+    .scan-stepper-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      overflow-x: auto;
+    }
+
+    .stepper-node {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .stepper-node.active-orange {
+      color: var(--primary);
+    }
+
+    .stepper-node.active-green {
+      color: var(--accent);
+    }
+
+    .stepper-arrow {
+      color: var(--border-strong);
+      font-size: 10px;
+    }
+
+    /* Bottom Sticky Action Bar (Navy #0F172A) */
+    .scanner-sticky-bar {
+      position: sticky;
+      bottom: 0;
+      margin-top: auto;
+      background: #0F172A;
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .sticky-cart-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sticky-cart-summary .cart-icon {
+      font-size: 20px;
+    }
+
+    .sticky-items-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #F8FAFC;
+    }
+
+    .sticky-total-label {
+      font-size: 14px;
+      font-weight: 800;
+      color: #FF7733;
+      font-family: var(--font-mono);
+    }
+
+    .btn-scan-item-sub {
+      background: #1E293B;
+      color: #E2E8F0;
+      border: 1px solid #334155;
+      font-size: 13px;
+      font-weight: 700;
+      min-height: 40px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-scan-item-sub:hover {
+      background: #2D3E5F;
+    }
+
+    .btn-scan-item-sub .plus {
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    .btn-view-cart-cta {
+      background: var(--primary);
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      min-height: 40px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    .btn-view-cart-cta:hover {
+      background: var(--primary-hover);
+    }
+
+    /* =========================================================================
+       SCREEN 3: REVIEW YOUR CART (Image 2)
+       ========================================================================= */
+    .cart-items-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .cart-product-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .item-check-pill {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #16A34A;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .cart-item-thumbnail {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-sm);
+      object-fit: contain;
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      padding: 4px;
+      flex-shrink: 0;
+    }
+
+    .cart-item-mid {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cart-item-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cart-barcode-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 1px;
+      margin-bottom: 6px;
+    }
+
+    /* Stepper Controls */
+    .stepper-box {
+      display: inline-flex;
+      align-items: center;
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .stepper-btn {
+      width: 32px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .stepper-btn:hover {
+      background: var(--surface-subtle);
+      color: var(--primary);
+    }
+
+    .stepper-val {
+      min-width: 28px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+
+    .cart-item-right {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .item-unit-calc {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .item-delete-cross {
+      font-size: 13px;
+      color: var(--text-subtle);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    .item-delete-cross:hover {
+      color: #EF4444;
+      background: #FEE2E2;
+    }
+
+    .item-total-price {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+    }
+
+    /* Checkout Choices Dual Buttons */
+    .checkout-decision-wrap {
+      margin-bottom: 18px;
+    }
+
+    .checkout-decision-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1E293B;
+      margin-bottom: 10px;
+    }
+
+    .btn-choice-card {
+      width: 100%;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .btn-choice-card.orange {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .btn-choice-card.orange:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-choice-card.purple {
+      background: #FAF5FF;
+      border: 1.5px solid #C084FC;
+      color: #581C87;
+    }
+
+    .btn-choice-card.purple:hover {
+      background: #F3E8FF;
+    }
+
+    .choice-card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .choice-icon-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .choice-icon-circle.white-orange {
+      background: white;
+      color: var(--primary);
+    }
+
+    .choice-icon-circle.light-purple {
+      background: #F3E8FF;
+      color: #7C3AED;
+    }
+
+    .choice-main-text {
+      font-size: 14.5px;
+      font-weight: 800;
+    }
+
+    .choice-sub-text {
+      font-size: 11.5px;
+      opacity: 0.88;
+      margin-top: 1px;
+    }
+
+    .choice-chevron {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* Order Summary Card */
+    .order-summary-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .summary-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .summary-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .summary-link {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue-main);
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: var(--radius-xs);
+    }
+
+    .summary-link:hover {
+      background: var(--blue-light);
+    }
+
+    .summary-line-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .summary-line-row.green-discount {
+      color: #16A34A;
+      font-weight: 700;
+    }
+
+    .detailed-breakdown-box {
+      display: none;
+      background: var(--surface-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin: 8px 0 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+    }
+
+    .summary-divider-dash {
+      border-top: 1px dashed var(--border);
+      margin: 12px 0 10px;
+    }
+
+    .summary-total-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .total-title-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .total-main-label {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .total-sub-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .total-amount-large {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+    }
+
+    /* Blue Notice Banner */
+    .blue-lock-notice {
+      background: #EFF6FF;
+      border: 1px solid #DBEAFE;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      color: #1E3A8A;
+      line-height: 1.4;
+    }
+
+    .blue-lock-notice .icon {
+      font-size: 18px;
+      color: #2563EB;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================================
+       SCREEN 4: REGULAR CHECKOUT SELECTED (Image 4)
+       ========================================================================= */
+    .regular-checkout-center {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .confetti-cart-visual {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: #EFF6FF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px auto 16px;
+      position: relative;
+    }
+
+    .confetti-cart-visual .cart-svg-icon {
+      width: 50px;
+      height: 50px;
+      color: #2563EB;
+    }
+
+    .regular-heading {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1E293B;
+      margin-bottom: 4px;
+    }
+
+    .regular-thanks {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--blue-main);
+      margin-bottom: 8px;
+    }
+
+    .regular-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      max-width: 400px;
+      margin: 0 auto 20px;
+    }
+
+    /* What Happens Next Card */
+    .steps-card-vertical {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      text-align: left;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .vertical-step-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      position: relative;
+      padding-bottom: 18px;
+    }
+
+    .vertical-step-row:last-child {
+      padding-bottom: 0;
+    }
+
+    .step-num-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #2563EB;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .step-icon-square {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: #F1F5F9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .step-body-content {
+      flex: 1;
+    }
+
+    .step-body-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .step-body-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .vertical-line-guide {
+      position: absolute;
+      top: 24px;
+      bottom: 0;
+      left: 11px;
+      width: 2px;
+      border-left: 2px dashed #CBD5E1;
+      z-index: 1;
+    }
+
+    /* Blue Alert Info Box */
+    .blue-alert-box {
+      background: #EFF6FF;
+      border: 1px solid #DBEAFE;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .blue-alert-box .info-icon {
+      font-size: 22px;
+      color: #2563EB;
+      flex-shrink: 0;
+    }
+
+    .blue-alert-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1E3A8A;
+      margin-bottom: 2px;
+    }
+
+    .blue-alert-text {
+      font-size: 12px;
+      color: #3B82F6;
+      line-height: 1.4;
+    }
+
+    /* Buttons */
+    .btn-solid-orange-action {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      min-height: 48px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px var(--primary-glow);
+      margin-bottom: 10px;
+    }
+
+    .btn-outline-action {
+      width: 100%;
+      background: white;
+      border: 1.5px solid #1E293B;
+      color: #1E293B;
+      font-size: 15px;
+      font-weight: 800;
+      min-height: 48px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .security-pill-success {
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      border-radius: var(--radius-full);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #065F46;
+    }
+
+    /* =========================================================================
+       SCREEN 5: PAYMENT SUCCESSFUL & FAST-PASS (Image 5)
+       ========================================================================= */
+    .success-green-card {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .success-green-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .success-check-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #16A34A;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .success-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #15803D;
+    }
+
+    .success-paid-sum {
+      font-size: 20px;
+      font-weight: 800;
+      color: #15803D;
+      font-family: var(--font-mono);
+      margin-top: 1px;
+    }
+
+    .success-order-meta {
+      font-size: 12px;
+      color: #64748B;
+    }
+
+    .secure-badge-pill {
+      font-size: 11px;
+      font-weight: 700;
+      color: #16A34A;
+      background: white;
+      border: 1px solid #BBF7D0;
+      border-radius: var(--radius-full);
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Fast-Pass Main Card */
+    .fastpass-ticket-card {
+      background: white;
+      border: 1.5px solid #FED7AA;
+      border-radius: var(--radius-lg);
+      padding: 20px 16px;
+      text-align: center;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(255, 85, 0, 0.08);
+      position: relative;
+    }
+
+    .fastpass-header-tag {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .fastpass-subtitle {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .qr-frame-wrapper {
+      position: relative;
+      display: inline-block;
+      padding: 14px;
+      background: white;
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      margin-bottom: 14px;
+      cursor: pointer;
+    }
+
+    #qrcodeRenderCanvas img,
+    #qrcodeRenderCanvas canvas {
+      margin: 0 auto;
+      display: block;
+      width: 180px !important;
+      height: 180px !important;
+    }
+
+    .token-display-pill {
+      background: #FFF7ED;
+      border: 1px solid #FED7AA;
+      color: #EA580C;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      display: inline-block;
+    }
+
+    /* Assigned Counter Card (Navy #0A192F) */
+    .verification-counter-card {
+      background: #0A192F;
+      color: white;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .counter-top-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: #FF8833;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .counter-split-layout {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .counter-number-block {
+      border-right: 1px solid rgba(255, 255, 255, 0.15);
+      padding-right: 16px;
+      text-align: center;
+    }
+
+    .counter-number-block .label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94A3B8;
+      letter-spacing: 0.05em;
+    }
+
+    .counter-number-block .digits {
+      font-size: 42px;
+      font-weight: 800;
+      color: #FF6600;
+      line-height: 1;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .counter-details-block {
+      flex: 1;
+    }
+
+    .counter-details-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .counter-wait-time {
+      font-size: 12.5px;
+      color: #E2E8F0;
+      margin-bottom: 6px;
+    }
+
+    .counter-ai-pill {
+      font-size: 11px;
+      color: #94A3B8;
+      line-height: 1.3;
+    }
+
+    /* What Happens at Verification Card */
+    .verification-steps-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .v-steps-header {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #1E293B;
+      margin-bottom: 12px;
+    }
+
+    .v-steps-horizontal {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .v-step-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 30%;
+      position: relative;
+    }
+
+    .v-step-num {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #FF5500;
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+
+    .v-step-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #F1F5F9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .v-step-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .v-step-desc {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    .v-step-connector {
+      position: absolute;
+      top: 30px;
+      left: 28%;
+      right: 28%;
+      height: 2px;
+      border-top: 2px dashed #CBD5E1;
+      z-index: 0;
+    }
+
+    /* Cart Locked Notice */
+    .cart-locked-banner {
+      background: #FFFBEB;
+      border: 1px solid #FEF3C7;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .cart-locked-banner .lock-icon {
+      font-size: 18px;
+      color: #D97706;
+      flex-shrink: 0;
+    }
+
+    .cart-locked-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #B45309;
+      margin-bottom: 2px;
+    }
+
+    .cart-locked-body {
+      font-size: 11.5px;
+      color: #78350F;
+      line-height: 1.4;
+    }
+
+    /* Ready to Exit Pill */
+    .ready-exit-card {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .ready-exit-card .runner-icon {
+      font-size: 24px;
+      color: #16A34A;
+      flex-shrink: 0;
+    }
+
+    .ready-exit-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #15803D;
+    }
+
+    .ready-exit-sub {
+      font-size: 11.5px;
+      color: #166534;
+    }
+
+    .mandatory-footer-text {
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* =========================================================================
+       MODALS & OVERLAYS
+       ========================================================================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 120;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+
+    @media (min-width: 520px) {
+      .modal-overlay {
+        align-items: center;
+        padding: 20px;
+      }
+    }
+
+    .modal-sheet {
+      background: white;
+      width: 100%;
+      max-width: 460px;
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      padding: 24px 20px;
+      box-shadow: var(--shadow-xl);
+      animation: slideSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    @media (min-width: 520px) {
+      .modal-sheet {
+        border-radius: var(--radius-xl);
+      }
+    }
+
+    @keyframes slideSheetUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .pay-methods-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 16px 0 20px;
+    }
+
+    .pay-method-option {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      background: white;
+      transition: all 0.15s ease;
+    }
+
+    .pay-method-option:hover {
+      border-color: var(--border-strong);
+    }
+
+    .pay-method-option.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .pay-method-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pay-method-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #F1F5F9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .pay-method-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .pay-method-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* =========================================================================
+       ADMIN POS CASHIER TERMINAL (SCREEN 6)
+       ========================================================================= */
+    .admin-pos-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Floating Quick Nav Pill Bar with Sliding Dynamic Highlight */
+    .quick-demo-bar {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid #334155;
+      border-radius: var(--radius-full);
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+      max-width: 96vw;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      isolation: isolate;
+    }
+
+    .quick-demo-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-indicator-pill {
+      position: absolute;
+      top: 4px;
+      left: 0;
+      height: calc(100% - 8px);
+      width: 0;
+      background: var(--primary);
+      border-radius: var(--radius-full);
+      box-shadow: 0 2px 10px var(--primary-glow);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0;
+      transform: translate3d(0, 0, 0);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+      will-change: transform, width;
+    }
+
+    .quick-demo-bar button.nav-btn {
+      position: relative;
+      z-index: 2;
+      color: #CBD5E1;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 11px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .quick-demo-bar button.nav-btn:hover {
+      color: #FFFFFF;
+    }
+
+    .quick-demo-bar button.nav-btn.active {
+      color: #FFFFFF;
+      font-weight: 800;
+    }
+
+    /* Global Toast Notification */
+    .toast-pill {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #0F172A;
+      color: white;
+      padding: 11px 20px;
+      border-radius: var(--radius-full);
+      font-size: 12.5px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 150;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-pill.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .toast-undo-btn {
+      color: var(--primary);
+      font-weight: 800;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+
+    /* Product SVG Data Icons */
+    .product-img-box {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FFFBEB;
+      border: 1px solid #FEF3C7;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      flex-shrink: 0;
+      font-size: 24px;
+    }
+
+    /* Invoice Receipt View */
+    .receipt-container {
+      background: #FFFFFF;
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin: 14px 0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 4px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-frame">
+
+    <!-- Top Universal Header -->
+    <header class="top-header">
+      <button class="brand-logo" onclick="navigateTo('screen-user-home')" aria-label="ShopFast Home">
+        <span class="brand-bolt">⚡</span>ShopFast
+      </button>
+
+      <div class="header-actions">
+        <!-- Store Selector Dropdown -->
+        <div class="store-pill" title="Change Supermarket Location">
+          <span>🏪</span>
+          <span id="storeNameText">Sai Supermarket</span>
+          <span class="chevron">▾</span>
+          <select id="storeSelectEl" onchange="onStoreLocationChange(this)" aria-label="Select Store Location">
+            <option value="sai">Sai Supermarket</option>
+            <option value="dmart">DMart Express</option>
+            <option value="star">Star Bazaar</option>
+            <option value="reliance">Reliance SMART</option>
+          </select>
+        </div>
+
+        <!-- Continue shopping link (dynamic) -->
+        <button id="headerContinueShoppingBtn" class="nav-link-btn" style="display:none;" onclick="navigateTo('screen-scanner')">
+          ← Continue Shopping
+        </button>
+
+        <!-- Cart Badge Icon -->
+        <button id="headerCartBtn" class="header-icon-btn" onclick="navigateTo('screen-cart')" title="View Cart" aria-label="View Shopping Cart">
+          🛒
+          <span id="cartBadgeCount" class="cart-badge-pill" style="display:none;">0</span>
+        </button>
+
+        <!-- Notification / Audio Beep Toggle -->
+        <button id="headerBellBtn" class="header-icon-btn" onclick="toggleAudio()" title="Sound effects toggle" aria-label="Toggle Audio Beeps">
+          🔔
+        </button>
+
+        <!-- Scanner Screen Close ✕ Button -->
+        <button id="headerCloseBtn" class="header-icon-btn" style="display:none;" onclick="navigateTo('screen-user-home')" title="Close Scanner" aria-label="Close Scanner">
+          ✕
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Screen Content Flow -->
+    <main class="screen-content">
+
+      <!-- ===================================================================
+           SCREEN 1: USER HOME / SMART CHECKOUT HUB (Screenshot 3)
+           =================================================================== -->
+      <section id="screen-user-home" class="screen active">
+        <!-- Hero Dark Navy Card -->
+        <div class="home-hero-card">
+          <div class="hero-eyebrow">SMART CHECKOUT</div>
+          <h1>Shop. Pay. Fast-Track.</h1>
+          <p>Scan barcode products with your phone, pay digitally, then use your Fast-Pass at the verification counter.</p>
+
+          <!-- 3D Bag & Phone Illustration -->
+          <div class="hero-3d-visual">
+            <svg viewBox="0 0 120 120" width="110" height="110">
+              <!-- Grocery Bag -->
+              <rect x="25" y="38" width="70" height="72" rx="10" fill="#E2A03F" stroke="#C47E20" stroke-width="2"/>
+              <path d="M40 38 C40 22, 80 22, 80 38" fill="none" stroke="#A86510" stroke-width="4" stroke-linecap="round"/>
+              <!-- Grocery items inside bag -->
+              <rect x="32" y="20" width="22" height="30" rx="3" fill="#EF4444"/>
+              <rect x="58" y="16" width="20" height="34" rx="3" fill="#10B981"/>
+              <!-- Phone scanning barcode -->
+              <rect x="42" y="32" width="46" height="74" rx="6" fill="#1E293B" stroke="#0F172A" stroke-width="2"/>
+              <rect x="46" y="38" width="38" height="60" rx="3" fill="#0F172A"/>
+              <!-- Barcode on phone screen -->
+              <rect x="52" y="48" width="26" height="18" fill="white" rx="2"/>
+              <line x1="55" y1="52" x2="55" y2="62" stroke="#0F172A" stroke-width="1.5"/>
+              <line x1="58" y1="52" x2="58" y2="62" stroke="#0F172A" stroke-width="2.5"/>
+              <line x1="63" y1="52" x2="63" y2="62" stroke="#0F172A" stroke-width="1.5"/>
+              <line x1="67" y1="52" x2="67" y2="62" stroke="#0F172A" stroke-width="3"/>
+              <line x1="72" y1="52" x2="72" y2="62" stroke="#0F172A" stroke-width="1.5"/>
+              <!-- Orange laser line -->
+              <line x1="48" y1="57" x2="82" y2="57" stroke="#FF5500" stroke-width="2"/>
+            </svg>
+          </div>
+
+          <!-- 4-Step Connected Process -->
+          <div class="hero-steps-line">
+            <div class="steps-connector-dots"></div>
+
+            <div class="hero-step-item" onclick="navigateTo('screen-scanner')">
+              <div class="step-circle-icon">|||||</div>
+              <span class="step-text-label">1. SCAN</span>
+            </div>
+            <div class="hero-step-item" onclick="navigateTo('screen-cart')">
+              <div class="step-circle-icon">🛒</div>
+              <span class="step-text-label">2. SHOP</span>
+            </div>
+            <div class="hero-step-item" onclick="openPaymentSheet()">
+              <div class="step-circle-icon">💳</div>
+              <span class="step-text-label">3. PAY</span>
+            </div>
+            <div class="hero-step-item" onclick="navigateTo('screen-success')">
+              <div class="step-circle-icon">🚶</div>
+              <span class="step-text-label">4. VEIGO</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Big Orange CTA -->
+        <div class="start-scan-box">
+          <button class="btn-orange-cta" onclick="navigateTo('screen-scanner')">
+            <span>📷</span> Start Scanning
+          </button>
+          <div class="scan-cta-subtext">Barcode products only • Point phone at packaging</div>
+        </div>
+
+        <!-- How ShopFast Works Section -->
+        <div class="info-section-card">
+          <div class="section-heading-sm">How ShopFast works</div>
+
+          <!-- Feature 1: Scan -->
+          <div class="feature-row">
+            <div class="feature-icon-circle blue">📱</div>
+            <div>
+              <div class="feature-title">Scan</div>
+              <div class="feature-desc">Scan each product barcode with your phone.</div>
+            </div>
+          </div>
+
+          <!-- Feature 2: Pay -->
+          <div class="feature-row">
+            <div class="feature-icon-circle peach">💳</div>
+            <div>
+              <div class="feature-title">Pay</div>
+              <div class="feature-desc">Review your cart and pay digitally.</div>
+            </div>
+          </div>
+
+          <!-- Feature 3: Fast-Pass -->
+          <div class="feature-row">
+            <div class="feature-icon-circle green">⛶</div>
+            <div>
+              <div class="feature-title">Fast-Pass</div>
+              <div class="feature-desc">Get your verification counter and QR pass.</div>
+            </div>
+          </div>
+
+          <div class="card-footer-link" onclick="openInfoModal()">
+            How it works <span>›</span>
+          </div>
+        </div>
+
+        <!-- Safety Badge Card -->
+        <div class="security-badge-card">
+          <span class="shield-icon">🛡️</span>
+          <span>Your items will still be verified at the counter for a secure checkout.</span>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           SCREEN 2: SCAN PRODUCT (Screenshot 1)
+           =================================================================== -->
+      <section id="screen-scanner" class="screen">
+        <div class="screen-title-row">
+          <div>
+            <h2 class="screen-title">SCAN PRODUCT</h2>
+            <p class="screen-subtitle">Point your camera at the barcode</p>
+          </div>
+          <div class="pill-tag" onclick="openManualSearchModal()" style="cursor:pointer;" title="Type barcode manually">
+            Barcode products only ⓘ
+          </div>
+        </div>
+
+        <div class="scanner-view-wrap">
+          <!-- Camera Viewport Frame -->
+          <div class="camera-frame-box">
+            <div id="reader"></div>
+
+            <!-- Scanner Reticle Frame Overlay -->
+            <div class="scanner-overlay">
+              <div class="target-reticle">
+                <div class="corner-bracket corner-tl"></div>
+                <div class="corner-bracket corner-tr"></div>
+                <div class="corner-bracket corner-bl"></div>
+                <div class="corner-bracket corner-br"></div>
+                <div class="laser-beam"></div>
+              </div>
+            </div>
+
+            <!-- Bottom HUD in Camera -->
+            <div class="camera-hud-bottom">
+              <div class="camera-status-tag">
+                <span class="camera-green-dot"></span>
+                <span id="scannerStatusLabel">Camera ready</span>
+              </div>
+              <div style="font-size:11px; opacity:0.85;">Align the barcode inside the frame</div>
+              <button class="torch-btn" id="torchBtnEl" onclick="toggleTorch()" title="Toggle Camera Torch" aria-label="Toggle Flashlight">⚡</button>
+            </div>
+          </div>
+
+          <!-- Floating "ADDED TO CART" Notification (Appears on scan) -->
+          <div id="addedCartNotification" class="added-cart-popup" style="display:none;">
+            <div class="popup-left">
+              <div class="popup-check-icon">✓</div>
+              <div>
+                <div class="popup-badge">ADDED TO CART</div>
+                <div id="popupItemTitle" class="popup-item-name">Maggi 2-Minute Noodles</div>
+                <div id="popupItemPrice" class="popup-item-price">₹56 × 1</div>
+              </div>
+            </div>
+            <div id="popupItemThumbnailBox">
+              <div class="product-img-box">🍜</div>
+            </div>
+          </div>
+
+          <!-- Warning Notice Card -->
+          <div class="scan-warning-card">
+            <div class="scan-warning-text">
+              <div class="scan-warning-title">
+                <span>⚠️</span> Every item must be scanned
+              </div>
+              <div class="scan-warning-body">
+                <p><b>Only take products that are added to your ShopFast cart</b> to the verification counter.</p>
+                <p>Unscanned products cannot be added after payment. They must be processed separately through the supermarket's regular billing process.</p>
+              </div>
+            </div>
+            <div class="scan-warning-lock">
+              <div class="lock-circle-icon">🔒</div>
+              <div class="lock-caption">Your cart will be locked after payment.</div>
+            </div>
+          </div>
+
+          <!-- Stepper Progression Bar -->
+          <div class="scan-stepper-row">
+            <div class="stepper-node active-orange">📷 Scan</div>
+            <span class="stepper-arrow">›</span>
+            <div class="stepper-node active-green">✓ Added</div>
+            <span class="stepper-arrow">›</span>
+            <div class="stepper-node">📷 Scan next</div>
+            <span class="stepper-arrow">›</span>
+            <div class="stepper-node">🛒 Review</div>
+            <span class="stepper-arrow">›</span>
+            <div class="stepper-node">💳 Pay</div>
+            <span class="stepper-arrow">›</span>
+            <div class="stepper-node">🔒 Cart locked</div>
+          </div>
+
+          <!-- Barcode Quick Demo Picker Drawer & Manual Entry -->
+          <div style="background:white; border:1.5px solid var(--border); border-radius:var(--radius-md); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span>✨ 1-Tap Barcode Simulator</span>
+              <button onclick="openManualSearchModal()" style="color:var(--primary); font-size:11px; font-weight:800; text-decoration:underline;">🔍 Search Items</button>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;" id="simulatorBarcodesContainer">
+              <!-- Injected by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Sticky Bottom Bar -->
+          <div class="scanner-sticky-bar">
+            <div class="sticky-cart-summary" onclick="navigateTo('screen-cart')" style="cursor:pointer;" title="Go to Cart">
+              <span class="cart-icon">🛒</span>
+              <div>
+                <div class="sticky-items-label"><span id="scannerBarItemCount">3</span> Items</div>
+                <div class="sticky-total-label" id="scannerBarTotal">₹186</div>
+              </div>
+            </div>
+
+            <button class="btn-scan-item-sub" onclick="simulateRandomScan()">
+              <span class="plus">⊕</span> Scan Item
+            </button>
+
+            <button class="btn-view-cart-cta" onclick="navigateTo('screen-cart')">
+              View Cart <span>→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           SCREEN 3: REVIEW YOUR CART (Screenshot 2)
+           =================================================================== -->
+      <section id="screen-cart" class="screen">
+        <div class="screen-title-row">
+          <div>
+            <h2 class="screen-title">Review Your Cart</h2>
+            <p class="screen-subtitle">Make sure everything you're carrying is included.</p>
+          </div>
+          <div class="pill-tag" style="background:#ECFDF5; color:#166534; border-color:#BBF7D0;">
+            🛒 <span id="cartScreenCountBadge">3 Items</span>
+          </div>
+        </div>
+
+        <!-- Cart Empty State -->
+        <div id="cartEmptyView" style="display:none; text-align:center; padding:40px 10px;">
+          <div style="font-size:48px; margin-bottom:12px;">🛍️</div>
+          <h3 style="font-size:18px; font-weight:800; margin-bottom:6px;">Your cart is empty</h3>
+          <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Scan items in the supermarket aisle to start self-checkout.</p>
+          <button class="btn-orange-cta" onclick="navigateTo('screen-scanner')">Open Barcode Scanner</button>
+        </div>
+
+        <!-- Populated Cart View -->
+        <div id="cartPopulatedView">
+          <!-- Cart Items List -->
+          <div class="cart-items-container" id="cartProductList">
+            <!-- Dynamically Rendered -->
+          </div>
+
+          <!-- Checkout Decision Question -->
+          <div class="checkout-decision-wrap">
+            <div class="checkout-decision-title">How would you like to checkout?</div>
+
+            <!-- Option 1: Continue with ShopFast -->
+            <button class="btn-choice-card orange" onclick="openPaymentSheet()">
+              <div class="choice-card-left">
+                <div class="choice-icon-circle white-orange">⚡</div>
+                <div>
+                  <div class="choice-main-text">Continue with ShopFast</div>
+                  <div class="choice-sub-text">All my eligible barcode products are scanned</div>
+                </div>
+              </div>
+              <div class="choice-chevron">›</div>
+            </button>
+
+            <!-- Option 2: Regular Checkout -->
+            <button class="btn-choice-card purple" onclick="navigateTo('screen-regular-checkout')">
+              <div class="choice-card-left">
+                <div class="choice-icon-circle light-purple">🛒</div>
+                <div>
+                  <div class="choice-main-text">I Have Additional / Unscannable Items</div>
+                  <div class="choice-sub-text">Continue to Regular Checkout</div>
+                </div>
+              </div>
+              <div class="choice-chevron">›</div>
+            </button>
+          </div>
+
+          <!-- Order Summary Card -->
+          <div class="order-summary-card">
+            <div class="summary-head-row">
+              <div class="summary-title">Order Summary</div>
+              <button class="summary-link" onclick="toggleDetailedBreakdown()" id="btnToggleBreakdown">View details ▾</button>
+            </div>
+
+            <!-- Collapsible Tax Breakdown -->
+            <div class="detailed-breakdown-box" id="detailedBreakdownBox">
+              <div class="breakdown-row">
+                <span>Items Gross Amount:</span>
+                <span id="breakdownGross">₹362.00</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Central GST (CGST @ 2.5%):</span>
+                <span id="breakdownCGST">₹9.00</span>
+              </div>
+              <div class="breakdown-row">
+                <span>State GST (SGST @ 2.5%):</span>
+                <span id="breakdownSGST">₹9.00</span>
+              </div>
+              <div class="breakdown-row" style="color:#16A34A;">
+                <span>ShopFast Instant Discount:</span>
+                <span id="breakdownDisc">-₹20.00</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Convenience / App Fee:</span>
+                <span style="color:#16A34A; font-weight:700;">FREE (₹0)</span>
+              </div>
+            </div>
+
+            <div class="summary-line-row">
+              <span>Subtotal</span>
+              <span id="summarySubtotal" style="font-family:var(--font-mono); font-weight:700; color:var(--text-main);">₹362</span>
+            </div>
+
+            <div class="summary-line-row green-discount">
+              <span>Discounts</span>
+              <span id="summaryDiscount" style="font-family:var(--font-mono);">-₹20</span>
+            </div>
+
+            <div class="summary-line-row">
+              <span>Taxes / applicable charges</span>
+              <span id="summaryTaxes" style="font-family:var(--font-mono); font-weight:700; color:var(--text-main);">₹18</span>
+            </div>
+
+            <div class="summary-divider-dash"></div>
+
+            <div class="summary-total-row">
+              <div class="total-title-box">
+                <span class="total-main-label">TOTAL</span>
+                <span class="total-sub-label">Incl. of all taxes</span>
+              </div>
+              <span class="total-amount-large" id="summaryGrandTotal">₹380</span>
+            </div>
+          </div>
+
+          <!-- Bottom Lock Notice -->
+          <div class="blue-lock-notice">
+            <span class="icon">🔒</span>
+            <div>
+              <b>ShopFast cart locks after payment.</b><br>
+              New or unscanned products cannot be added at the ShopFast verification counter.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           SCREEN 4: REGULAR CHECKOUT SELECTED (Screenshot 4)
+           =================================================================== -->
+      <section id="screen-regular-checkout" class="screen">
+        <div class="regular-checkout-center">
+          <!-- Confetti Shopping Cart Illustration -->
+          <div class="confetti-cart-visual">
+            <svg class="cart-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <div style="position:absolute; top:-2px; right:-2px; width:22px; height:22px; border-radius:50%; background:#10B981; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; border:2px solid white;">✓</div>
+          </div>
+
+          <h2 class="regular-heading">Regular Checkout Selected</h2>
+          <div class="regular-thanks">Thanks for choosing ShopFast!</div>
+          <p class="regular-desc">Since you have additional or unscannable items, please complete your purchase at a regular billing counter.</p>
+        </div>
+
+        <!-- What Happens Next 3-Step Card -->
+        <div class="steps-card-vertical">
+          <div style="font-size:14px; font-weight:800; color:var(--text-main); margin-bottom:14px;">What happens next?</div>
+
+          <div class="vertical-step-row">
+            <div class="vertical-line-guide"></div>
+            <div class="step-num-circle">1</div>
+            <div class="step-icon-square">🧺</div>
+            <div class="step-body-content">
+              <div class="step-body-title">Take your complete basket</div>
+              <div class="step-body-sub">Ensure you have all your items with you.</div>
+            </div>
+          </div>
+
+          <div class="vertical-step-row">
+            <div class="vertical-line-guide"></div>
+            <div class="step-num-circle">2</div>
+            <div class="step-icon-square">🧑‍💼</div>
+            <div class="step-body-content">
+              <div class="step-body-title">Go to any regular billing counter</div>
+              <div class="step-body-sub">You can approach any open counter in the supermarket.</div>
+            </div>
+          </div>
+
+          <div class="vertical-step-row">
+            <div class="step-num-circle">3</div>
+            <div class="step-icon-square">🧾</div>
+            <div class="step-body-content">
+              <div class="step-body-title">Complete your purchase normally</div>
+              <div class="step-body-sub">The billing executive will process your complete basket.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Blue Warning Box -->
+        <div class="blue-alert-box">
+          <span class="info-icon">ⓘ</span>
+          <div>
+            <div class="blue-alert-title">ShopFast Fast-Pass not generated</div>
+            <div class="blue-alert-text">Your ShopFast cart will not be sent for verification. Please use the supermarket's regular billing process for your complete basket.</div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <button class="btn-solid-orange-action" onclick="resetCartAndGoHome()">
+          <span>🔄</span> Reset Cart
+        </button>
+        <div style="font-size:11.5px; color:var(--text-muted); text-align:center; margin:-6px 0 12px;">This will clear your current cart and take you back to start shopping.</div>
+
+        <button class="btn-outline-action" onclick="navigateTo('screen-cart')">
+          <span>←</span> Return to My Cart
+        </button>
+        <div style="font-size:11.5px; color:var(--text-muted); text-align:center; margin:-10px 0 16px;">Review your cart and continue with ShopFast payment.</div>
+
+        <!-- Green Guarantee Pill -->
+        <div class="security-pill-success">
+          <span>🛡️</span> No payment has been made. You can return to your cart anytime.
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           SCREEN 5: PAYMENT SUCCESSFUL & FAST-PASS (Screenshot 5)
+           =================================================================== -->
+      <section id="screen-success" class="screen">
+        <!-- Green Success Card -->
+        <div class="success-green-card">
+          <div class="success-green-left">
+            <div class="success-check-badge">✓</div>
+            <div>
+              <div class="success-title">Payment Successful</div>
+              <div class="success-paid-sum" id="passPaidTotal">₹380 PAID</div>
+              <div class="success-order-meta">
+                <span id="passItemCount">3 items</span> • Order <b id="passOrderNum">#SF-78451236</b>
+              </div>
+            </div>
+          </div>
+          <div class="secure-badge-pill">
+            <span>🛡️</span> Secure<br>Transaction
+          </div>
+        </div>
+
+        <!-- Fast-Pass QR Card -->
+        <div class="fastpass-ticket-card">
+          <div class="fastpass-header-tag">
+            <span>⚡</span> YOUR SHOPFAST FAST-PASS
+          </div>
+          <div class="fastpass-subtitle">Show this QR code at the ShopFast verification counter.</div>
+
+          <div class="qr-frame-wrapper" onclick="showReceiptModal()" title="Tap to view Digital Receipt & Token details">
+            <div id="qrcodeRenderCanvas"></div>
+            <!-- Orange corners on QR -->
+            <div class="corner-bracket corner-tl"></div>
+            <div class="corner-bracket corner-tr"></div>
+            <div class="corner-bracket corner-bl"></div>
+            <div class="corner-bracket corner-br"></div>
+          </div>
+
+          <div>
+            <span class="token-display-pill">TOKEN: <span id="passTokenCode">SF-8FD9</span></span>
+          </div>
+
+          <div style="margin-top:10px;">
+            <button class="nav-link-btn" style="display:inline-flex; margin:0 auto;" onclick="showReceiptModal()">🧾 View Digital Tax Invoice ›</button>
+          </div>
+        </div>
+
+        <!-- Verification Counter Card (Dark Navy #0A192F) -->
+        <div class="verification-counter-card">
+          <div class="counter-top-tag">
+            <span>⚡</span> YOUR VERIFICATION COUNTER
+          </div>
+
+          <div class="counter-split-layout">
+            <div class="counter-number-block">
+              <div class="label">COUNTER</div>
+              <div class="digits" id="passCounterDigits">03</div>
+            </div>
+
+            <div class="counter-details-block">
+              <div class="counter-details-title" id="passCounterTitle">Proceed to Counter 03 for verification</div>
+              <div class="counter-wait-time">⏱ Estimated wait: <b style="color:#FF8833;" id="passWaitTime">~2 min</b></div>
+              <div class="counter-ai-pill">🤖 ShopFast selected this counter using current queue and counter activity.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- What Happens at Verification Card -->
+        <div class="verification-steps-card">
+          <div class="v-steps-header">WHAT HAPPENS AT VERIFICATION</div>
+
+          <div class="v-steps-horizontal">
+            <div class="v-step-connector"></div>
+
+            <div class="v-step-node">
+              <div class="v-step-num">1</div>
+              <div class="v-step-icon-box">📱</div>
+              <div class="v-step-title">Show Fast-Pass</div>
+              <div class="v-step-desc">Show this QR code to the executive.</div>
+            </div>
+
+            <div class="v-step-node">
+              <div class="v-step-num">2</div>
+              <div class="v-step-icon-box">🏷️</div>
+              <div class="v-step-title">Executive scans your items</div>
+              <div class="v-step-desc">Your items will be verified against your paid ShopFast cart.</div>
+            </div>
+
+            <div class="v-step-node">
+              <div class="v-step-num">3</div>
+              <div class="v-step-icon-box" style="background:#ECFDF5; color:#10B981; font-weight:800; font-size:13px;">GO ✓</div>
+              <div class="v-step-title">Items match → GO</div>
+              <div class="v-step-desc">Once everything matches, you're good to go.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cart Locked Notice -->
+        <div class="cart-locked-banner">
+          <span class="lock-icon">🔒</span>
+          <div>
+            <div class="cart-locked-title">Cart Locked</div>
+            <div class="cart-locked-body">
+              Only products included in your paid cart can be processed through ShopFast verification.<br>
+              <span style="opacity:0.85; font-size:11px; display:inline-block; margin-top:2px;">New or unscanned products cannot be added to this transaction at the verification counter.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ready to Exit Card -->
+        <div class="ready-exit-card">
+          <span class="runner-icon">🏃</span>
+          <div>
+            <div class="ready-exit-title">After verification, you're ready to exit.</div>
+            <div class="ready-exit-sub">Thank you for shopping with ShopFast!</div>
+          </div>
+        </div>
+
+        <button class="btn-orange-cta" style="margin-bottom:12px;" onclick="resetCartAndGoHome()">
+          Done / Start New Shopping Trip →
+        </button>
+
+        <div class="mandatory-footer-text">
+          <span>✓</span> Verification is mandatory for all ShopFast transactions.
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           SCREEN 6: CASHIER POS / ADMIN TERMINAL (Verification Desk)
+           =================================================================== -->
+      <section id="screen-admin-dashboard" class="screen">
+        <div class="screen-title-row">
+          <div>
+            <h2 class="screen-title">POS Verification Terminal</h2>
+            <p class="screen-subtitle">Counter 03 Express Lane • Live Customer Verifier</p>
+          </div>
+          <button class="pill-tag" style="background:var(--primary); color:white; cursor:pointer;" onclick="navigateTo('screen-user-home')">← Customer Mode</button>
+        </div>
+
+        <div class="admin-pos-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div style="font-weight:800; font-size:15px;">Live Fast-Pass Scanner</div>
+            <span class="pill-tag" style="background:#ECFDF5; color:#15803D;">● READY</span>
+          </div>
+
+          <div id="adminDetailBox" style="background:var(--surface-subtle); border-radius:var(--radius-md); padding:16px; text-align:center;">
+            <div style="font-size:36px; margin-bottom:8px;">📷</div>
+            <div style="font-size:14px; font-weight:800;">Scan Customer's Fast-Pass QR</div>
+            <p style="font-size:12px; color:var(--text-muted); margin:4px 0 14px;">Point camera at customer smartphone or use 1-Tap verification.</p>
+            <button class="btn-orange-cta" style="padding:10px 16px; font-size:13px;" onclick="verifyCurrentCustomerToken()">
+              ✓ Auto-Verify Order (<span id="adminActiveOrderLabel">#SF-78451236</span>)
+            </button>
+          </div>
+
+          <div id="adminVerifiedResultBox" style="display:none; margin-top:14px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:var(--radius-md); padding:14px;">
+            <div style="color:#15803D; font-weight:800; font-size:14px; margin-bottom:6px;">✓ Order Verified & Bag Sealed</div>
+            <div id="adminVerifiedItemsSummary" style="font-size:12.5px; color:#166534; line-height:1.5;"></div>
+            <button class="btn-orange-cta" style="margin-top:12px; padding:8px 12px; font-size:12px;" onclick="adminReleaseCustomer()">
+              Release Customer & Next in Queue →
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ===================================================================
+         MODALS & SHEETS
+         =================================================================== -->
+
+    <!-- 1. Payment Sheet Modal -->
+    <div id="paymentModalOverlay" class="modal-overlay" onclick="closePaymentSheet(event)">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:17px; font-weight:800; color:var(--text-main);">Choose Payment Method</div>
+          <button onclick="closePaymentSheet()" style="font-size:20px; color:var(--text-muted); padding:4px;" aria-label="Close Payment Modal">✕</button>
+        </div>
+        <p style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">Digital payment enables zero-queue Fast-Pass verification.</p>
+
+        <div class="pay-methods-list">
+          <div class="pay-method-option selected" data-method="UPI" onclick="selectPayOption(this)">
+            <div class="pay-method-left">
+              <div class="pay-method-icon" style="color:#00B9F5;">⚡</div>
+              <div>
+                <div class="pay-method-name">UPI (GPay / PhonePe / Paytm)</div>
+                <div class="pay-method-sub">Instant zero-fee payment</div>
+              </div>
+            </div>
+            <span style="color:var(--primary); font-weight:800; font-size:16px;">✓</span>
+          </div>
+
+          <div class="pay-method-option" data-method="CARD" onclick="selectPayOption(this)">
+            <div class="pay-method-left">
+              <div class="pay-method-icon" style="color:#6366F1;">💳</div>
+              <div>
+                <div class="pay-method-name">Credit / Debit Card</div>
+                <div class="pay-method-sub">Visa, Mastercard, RuPay contactless</div>
+              </div>
+            </div>
+            <span style="color:var(--text-subtle);">›</span>
+          </div>
+
+          <div class="pay-method-option" data-method="NETBANKING" onclick="selectPayOption(this)">
+            <div class="pay-method-left">
+              <div class="pay-method-icon" style="color:#10B981;">🏦</div>
+              <div>
+                <div class="pay-method-name">Net Banking</div>
+                <div class="pay-method-sub">HDFC, SBI, ICICI, Axis Bank</div>
+              </div>
+            </div>
+            <span style="color:var(--text-subtle);">›</span>
+          </div>
+        </div>
+
+        <button id="btnConfirmPayAction" class="btn-orange-cta" onclick="processCustomerCheckout()">
+          Pay <span id="modalPayTotalAmount">₹380</span> & Generate Fast-Pass →
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. "How ShopFast Works" Full Info Modal -->
+    <div id="infoModalOverlay" class="modal-overlay" onclick="closeInfoModal(event)">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-size:18px; font-weight:800; color:var(--text-main);">⚡ How ShopFast Works</div>
+          <button onclick="closeInfoModal()" style="font-size:20px; color:var(--text-muted); padding:4px;" aria-label="Close Info Modal">✕</button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:14px; font-size:13px; color:var(--text-main); margin-bottom:20px;">
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <div style="width:32px; height:32px; border-radius:50%; background:#EFF6FF; color:#2563EB; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">1</div>
+            <div>
+              <b>Scan in Aisles:</b> Point your smartphone camera at product barcodes as you put them in your basket.
+            </div>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <div style="width:32px; height:32px; border-radius:50%; background:#FFF2EB; color:#FF5500; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">2</div>
+            <div>
+              <b>Review & Pay Digitally:</b> Check your shopping bag, apply discounts, and pay securely via UPI/Card in &lt; 5 seconds.
+            </div>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <div style="width:32px; height:32px; border-radius:50%; background:#ECFDF5; color:#10B981; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">3</div>
+            <div>
+              <b>Fast-Pass Exit:</b> Walk directly to Counter 03 Express Lane. Cashier verifies in under 3 seconds with zero queuing.
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-orange-cta" onclick="closeInfoModal(); navigateTo('screen-scanner');">
+          Start Scanning Now →
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Manual Search / Barcode Entry Modal -->
+    <div id="searchModalOverlay" class="modal-overlay" onclick="closeSearchModal(event)">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div style="font-size:17px; font-weight:800; color:var(--text-main);">🔍 Search Store Catalog</div>
+          <button onclick="closeSearchModal()" style="font-size:20px; color:var(--text-muted); padding:4px;" aria-label="Close Search Modal">✕</button>
+        </div>
+
+        <input type="text" id="catalogSearchInput" placeholder="Type product name or barcode..." 
+          oninput="onSearchQueryChange(this.value)"
+          style="width:100%; padding:12px 14px; border:1.5px solid var(--border-strong); border-radius:var(--radius-sm); font-size:14px; font-family:inherit; outline:none; margin-bottom:14px;">
+
+        <div id="searchResultsList" style="max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+          <!-- Filtered live -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Digital Tax Invoice / Receipt Modal -->
+    <div id="receiptModalOverlay" class="modal-overlay" onclick="closeReceiptModal(event)">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="font-size:17px; font-weight:800; color:var(--text-main);">🧾 Tax Invoice & Receipt</div>
+          <button onclick="closeReceiptModal()" style="font-size:20px; color:var(--text-muted); padding:4px;" aria-label="Close Receipt Modal">✕</button>
+        </div>
+
+        <div class="receipt-container" id="receiptContentContainer">
+          <div style="text-align:center; margin-bottom:10px;">
+            <b style="font-size:14px;" id="receiptStoreName">SAI SUPERMARKET</b><br>
+            <span style="font-size:10px; color:var(--text-muted);">GSTIN: 27AABCS1429B1Z8 • FASTSHOP SELF-CHECKOUT</span>
+          </div>
+          <div class="receipt-row">
+            <span>Order ID:</span>
+            <b id="receiptOrderNum">#SF-78451236</b>
+          </div>
+          <div class="receipt-row">
+            <span>Date & Time:</span>
+            <span id="receiptDateTime">30-Aug-2026 09:30 AM</span>
+          </div>
+          <div class="receipt-row">
+            <span>Assigned Lane:</span>
+            <b id="receiptCounterName">Counter 03 (Express)</b>
+          </div>
+          <div style="border-top:1px dashed #CBD5E1; margin:8px 0;"></div>
+          <div id="receiptItemsList"></div>
+          <div style="border-top:1px dashed #CBD5E1; margin:8px 0;"></div>
+          <div class="receipt-row">
+            <span>Subtotal:</span>
+            <span id="receiptSubtotal">₹362.00</span>
+          </div>
+          <div class="receipt-row" style="color:#16A34A;">
+            <span>Discount:</span>
+            <span id="receiptDiscount">-₹20.00</span>
+          </div>
+          <div class="receipt-row">
+            <span>CGST + SGST (5%):</span>
+            <span id="receiptTaxes">₹18.00</span>
+          </div>
+          <div class="receipt-row" style="font-size:14px; font-weight:800; border-top:1px solid #94A3B8; padding-top:4px; margin-top:4px;">
+            <span>TOTAL PAID:</span>
+            <span id="receiptGrandTotal">₹380.00</span>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button class="btn-orange-cta" style="flex:1;" onclick="window.print()">🖨️ Print / Save PDF</button>
+          <button class="btn-outline-action" style="flex:1; margin-bottom:0;" onclick="closeReceiptModal()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Navigation Demo Bar with Sliding Active Indicator -->
+    <nav class="quick-demo-bar" id="quickNavPillBar" aria-label="Screen Navigation" onmouseleave="onNavMouseLeave()">
+      <div class="nav-indicator-pill" id="navIndicatorPill"></div>
+      <button class="nav-btn active" data-screen="screen-user-home" onclick="navigateTo('screen-user-home')" onmouseenter="onNavHover(this)">🏠 Home</button>
+      <button class="nav-btn" data-screen="screen-scanner" onclick="navigateTo('screen-scanner')" onmouseenter="onNavHover(this)">📷 Scan</button>
+      <button class="nav-btn" data-screen="screen-cart" onclick="navigateTo('screen-cart')" onmouseenter="onNavHover(this)">🛒 Cart</button>
+      <button class="nav-btn" data-screen="screen-success" onclick="navigateTo('screen-success')" onmouseenter="onNavHover(this)">⚡ Fast-Pass</button>
+      <button class="nav-btn reset-btn" data-screen="reset" onclick="resetCartAndGoHome()" onmouseenter="onNavHover(this)">↺ Reset</button>
+    </nav>
+
+    <!-- Global Toast Notification -->
+    <div id="globalToastPill" class="toast-pill">
+      <span id="toastText">Item added</span>
+      <span id="toastUndoBtn" class="toast-undo-btn" style="display:none;" onclick="undoLastCartAction()">Undo</span>
+    </div>
+
+  </div>
+
+  <!-- Application Logic & Backend Integration -->
+  <script>
+    /* =========================================================================
+       1. DATA CATALOG & INITIAL SCREENSHOT MATCHING DATA
+       ========================================================================= */
+    const PRODUCT_CATALOG = [
+      { id: '8901058003765', name: 'Maggi 2-Minute Noodles', price: 56, category: 'Instant Food', icon: '🍜' },
+      { id: '8901063065406', name: 'Britannia Good Day Biscuits', price: 40, category: 'Biscuits', icon: '🍪' },
+      { id: '8901030810536', name: 'Surf Excel Matic', price: 210, category: 'Household', icon: '🧺' },
+      { id: '8902519009807', name: 'Classmate Notebook', price: 35, category: 'Stationery', icon: '📓' },
+      { id: '890103038384', name: 'Amul Taaza Milk 1L', price: 68, category: 'Dairy', icon: '🥛' },
+      { id: '890171912401', name: 'Britannia Whole Wheat Bread', price: 45, category: 'Bakery', icon: '🍞' },
+      { id: '544900000099', name: 'Coca-Cola Zero 750ml', price: 40, category: 'Beverage', icon: '🥤' },
+      { id: '890149110183', name: 'Lay\'s India\'s Magic Masala', price: 30, category: 'Snacks', icon: '🥔' },
+      { id: '890106301201', name: 'Tropicana Orange Juice 1L', price: 95, category: 'Beverage', icon: '🍊' },
+      { id: '762220172584', name: 'Cadbury Oreo Vanilla 120g', price: 50, category: 'Biscuits', icon: '🍪' },
+      { id: '890103035821', name: 'Nescafe Classic Coffee 50g', price: 180, category: 'Beverage', icon: '☕' }
+    ];
+
+    /* =========================================================================
+       2. APPLICATION STATE
+       ========================================================================= */
+    const savedCartId = localStorage.getItem('SHOPFAST_CART_ID') || ('cart_' + Math.random().toString(36).substring(2, 10));
+    localStorage.setItem('SHOPFAST_CART_ID', savedCartId);
+
+    const savedStore = localStorage.getItem('SHOPFAST_STORE_NAME') || 'Sai Supermarket';
+
+    const state = {
+      cartId: savedCartId,
+      currentScreen: 'screen-user-home',
+      selectedStore: savedStore,
+      selectedPaymentMethod: 'UPI',
+      audioEnabled: localStorage.getItem('SHOPFAST_AUDIO') !== 'false',
+      orderNumber: 'SF-78451236',
+      tokenCode: 'SF-8FD9',
+      assignedCounter: '03',
+      estimatedWait: '~2 min',
+      lastRemovedItem: null,
+      isTorchOn: false,
+      // Default empty cart
+      cart: {},
+      scannerInstance: null
+    };
+
+    /* =========================================================================
+       3. BACKEND API DISCOVERY & SYNC
+       ========================================================================= */
+    function getApiBase() {
+      if (window.location.protocol.startsWith('http')) {
+        const port = window.location.port;
+        if (port === '5500' || port === '3000' || port === '5173') {
+          return 'http://127.0.0.1:8000';
+        }
+        return window.location.origin;
+      }
+      return 'http://127.0.0.1:8000';
+    }
+    const API_BASE = getApiBase();
+
+    async function apiFetch(path, options = {}) {
+      const res = await fetch(API_BASE + path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+      });
+      if (!res.ok) {
+        const err = new Error('API error ' + res.status);
+        err.status = res.status;
+        throw err;
+      }
+      return res.status === 204 ? null : res.json();
+    }
+
+    /* =========================================================================
+       4. AUDIO SYNTHESIS (Crisp Beeps & Success Chimes)
+       ========================================================================= */
+    let audioCtx = null;
+    function playAudioTone(type = 'scan') {
+      if (!state.audioEnabled) return;
+      try {
+        if (!audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'scan') {
+          // Sharp supermarket checkout beep (2500Hz)
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(2500, now);
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } else if (type === 'success') {
+          // Two-tone cheerful victory chime
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(920, now);
+          osc.frequency.setValueAtTime(1840, now + 0.12);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        }
+      } catch (e) { }
+    }
+
+    function toggleAudio() {
+      state.audioEnabled = !state.audioEnabled;
+      localStorage.setItem('SHOPFAST_AUDIO', String(state.audioEnabled));
+      document.getElementById('headerBellBtn').textContent = state.audioEnabled ? '🔔' : '🔕';
+      showToast(state.audioEnabled ? 'Scan beeps enabled' : 'Scan sound muted');
+    }
+
+    /* =========================================================================
+       5. FINANCIALS & TOTALS ENGINE
+       ========================================================================= */
+    const money = n => '₹' + Number(n).toLocaleString('en-IN');
+
+    function calculateTotals() {
+      const items = Object.values(state.cart);
+      const count = items.reduce((sum, i) => sum + i.qty, 0);
+      const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      
+      // Calculate Discount & Taxes based on screenshot exact ratios
+      let discount = 0;
+      let taxes = 0;
+      if (count > 0) {
+        // Screenshot 2: Subtotal ₹362 -> Discount ₹20 -> Taxes ₹18 -> Total ₹380
+        discount = subtotal >= 300 ? 20 : (subtotal >= 100 ? 10 : 0);
+        taxes = Math.round(subtotal * 0.05); // 5% GST / packaging
+      }
+      const grandTotal = Math.max(0, subtotal - discount + taxes);
+      return { items, count, subtotal, discount, taxes, grandTotal };
+    }
+
+    /* =========================================================================
+       6. NAVIGATION & SLIDING PILL CONTROLLER
+       ========================================================================= */
+    let isNavHovered = false;
+
+    function updateNavIndicator(targetBtn, smooth = true) {
+      const pill = document.getElementById('navIndicatorPill');
+      const bar = document.getElementById('quickNavPillBar');
+      if (!pill || !bar || !targetBtn) return;
+
+      const targetLeft = targetBtn.offsetLeft;
+      const targetTop = targetBtn.offsetTop;
+      const targetWidth = targetBtn.offsetWidth;
+      const targetHeight = targetBtn.offsetHeight;
+
+      if (!smooth) {
+        pill.style.transition = 'none';
+      } else {
+        pill.style.transition = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease';
+      }
+
+      pill.style.transform = `translate3d(${targetLeft}px, ${targetTop}px, 0)`;
+      pill.style.width = `${targetWidth}px`;
+      pill.style.height = `${targetHeight}px`;
+      pill.style.opacity = '1';
+
+      if (!smooth) {
+        pill.offsetHeight; // Force reflow
+        pill.style.transition = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease';
+      }
+    }
+
+    function syncNavActiveState(screenId) {
+      const bar = document.getElementById('quickNavPillBar');
+      if (!bar) return;
+
+      const buttons = bar.querySelectorAll('.nav-btn');
+      let activeBtn = null;
+
+      buttons.forEach(btn => {
+        if (btn.dataset.screen === screenId) {
+          btn.classList.add('active');
+          activeBtn = btn;
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      if (activeBtn) {
+        updateNavIndicator(activeBtn, true);
+      }
+    }
+
+    function onNavHover(btn) {
+      isNavHovered = true;
+      updateNavIndicator(btn, true);
+    }
+
+    function onNavMouseLeave() {
+      isNavHovered = false;
+      const bar = document.getElementById('quickNavPillBar');
+      if (!bar) return;
+      const activeBtn = bar.querySelector(`.nav-btn[data-screen="${state.currentScreen}"]`) || bar.querySelector('.nav-btn.active');
+      if (activeBtn) {
+        updateNavIndicator(activeBtn, true);
+      }
+    }
+
+    function navigateTo(screenId) {
+      // Auto-stop camera scanner if leaving scanner screen
+      if (state.currentScreen === 'screen-scanner' && screenId !== 'screen-scanner') {
+        if (state.scannerInstance) {
+          state.scannerInstance.stop().catch(() => {});
+          state.scannerInstance = null;
+        }
+      }
+
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(screenId);
+      if (target) {
+        target.classList.add('active');
+        state.currentScreen = screenId;
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      // Sync the bottom navigation active pill indicator
+      syncNavActiveState(screenId);
+
+      // Update header buttons visibility based on screen
+      const closeBtn = document.getElementById('headerCloseBtn');
+      const cartBtn = document.getElementById('headerCartBtn');
+      const contBtn = document.getElementById('headerContinueShoppingBtn');
+      const bellBtn = document.getElementById('headerBellBtn');
+
+      if (screenId === 'screen-scanner') {
+        closeBtn.style.display = 'flex';
+        contBtn.style.display = 'none';
+        bellBtn.style.display = 'none';
+        setTimeout(initCameraScanner, 200);
+      } else if (screenId === 'screen-cart') {
+        closeBtn.style.display = 'none';
+        contBtn.style.display = 'flex';
+        bellBtn.style.display = 'none';
+      } else {
+        closeBtn.style.display = 'none';
+        contBtn.style.display = 'none';
+        bellBtn.style.display = 'flex';
+      }
+
+      render();
+    }
+
+    function onStoreLocationChange(sel) {
+      state.selectedStore = sel.options[sel.selectedIndex].text;
+      localStorage.setItem('SHOPFAST_STORE_NAME', state.selectedStore);
+      document.getElementById('storeNameText').textContent = state.selectedStore;
+      showToast(`Store location set to ${state.selectedStore}`);
+    }
+
+    function toggleDetailedBreakdown() {
+      const box = document.getElementById('detailedBreakdownBox');
+      const btn = document.getElementById('btnToggleBreakdown');
+      if (!box || !btn) return;
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        btn.textContent = 'View details ▾';
+      } else {
+        box.style.display = 'block';
+        btn.textContent = 'Hide details ▴';
+      }
+    }
+
+    /* =========================================================================
+       7. CART CRUD OPERATIONS
+       ========================================================================= */
+    async function addProductToCart(product, qtyToAdd = 1) {
+      if (!state.cart[product.id]) {
+        state.cart[product.id] = { ...product, qty: 0 };
+      }
+      state.cart[product.id].qty += qtyToAdd;
+      playAudioTone('scan');
+
+      // Update Popup Banner on Scanner
+      const popup = document.getElementById('addedCartNotification');
+      document.getElementById('popupItemTitle').textContent = product.name;
+      document.getElementById('popupItemPrice').textContent = `${money(product.price)} × ${state.cart[product.id].qty}`;
+      document.getElementById('popupItemThumbnailBox').innerHTML = `<div class="product-img-box">${product.icon}</div>`;
+      if (popup) {
+        popup.style.display = 'flex';
+      }
+
+      showToast(`Added ${product.name} (Qty: ${state.cart[product.id].qty}) ✓`);
+      render();
+
+      // Sync with PostgreSQL / SQLite backend
+      try {
+        await apiFetch(`/api/v1/carts/${encodeURIComponent(state.cartId)}/items`, {
+          method: 'POST',
+          body: JSON.stringify({ barcode: product.id, quantity: qtyToAdd })
+        });
+      } catch (e) { }
+    }
+
+    async function changeItemQuantity(barcode, delta) {
+      if (!state.cart[barcode]) return;
+      const target = state.cart[barcode].qty + delta;
+      if (target <= 0) {
+        state.lastRemovedItem = { ...state.cart[barcode] };
+        delete state.cart[barcode];
+        showToast(`${state.lastRemovedItem.name} removed`, true);
+      } else {
+        state.cart[barcode].qty = target;
+        playAudioTone('scan');
+      }
+      render();
+
+      try {
+        await apiFetch(`/api/v1/carts/${encodeURIComponent(state.cartId)}/items/${encodeURIComponent(barcode)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ quantity: target })
+        });
+      } catch (e) { }
+    }
+
+    async function deleteCartItem(barcode) {
+      if (!state.cart[barcode]) return;
+      state.lastRemovedItem = { ...state.cart[barcode] };
+      const name = state.cart[barcode].name;
+      delete state.cart[barcode];
+      showToast(`${name} removed`, true);
+      render();
+
+      try {
+        await apiFetch(`/api/v1/carts/${encodeURIComponent(state.cartId)}/items/${encodeURIComponent(barcode)}`, {
+          method: 'DELETE'
+        });
+      } catch (e) { }
+    }
+
+    function undoLastCartAction() {
+      if (state.lastRemovedItem) {
+        addProductToCart(state.lastRemovedItem, state.lastRemovedItem.qty || 1);
+        state.lastRemovedItem = null;
+        showToast('Item restored to cart ✓');
+      }
+    }
+
+    async function resetCartAndGoHome() {
+      state.cart = {};
+      navigateTo('screen-user-home');
+      showToast('ShopFast cart reset');
+      render();
+
+      try {
+        await apiFetch(`/api/v1/carts/${encodeURIComponent(state.cartId)}`, {
+          method: 'DELETE'
+        });
+      } catch (e) { }
+    }
+
+    /* =========================================================================
+       8. UI RENDERER
+       ========================================================================= */
+    function render() {
+      const t = calculateTotals();
+
+      // Header Cart Badge
+      const headerBadge = document.getElementById('cartBadgeCount');
+      if (headerBadge) {
+        headerBadge.textContent = t.count;
+        headerBadge.style.display = t.count > 0 ? 'flex' : 'none';
+      }
+
+      // Scanner Screen HUD
+      const scanBarCount = document.getElementById('scannerBarItemCount');
+      const scanBarTotal = document.getElementById('scannerBarTotal');
+      if (scanBarCount) scanBarCount.textContent = t.count;
+      if (scanBarTotal) scanBarTotal.textContent = money(t.grandTotal);
+
+      // Cart Screen
+      const emptyView = document.getElementById('cartEmptyView');
+      const popView = document.getElementById('cartPopulatedView');
+      const cartBadge = document.getElementById('cartScreenCountBadge');
+      if (cartBadge) cartBadge.textContent = `${t.count} Item${t.count === 1 ? '' : 's'}`;
+
+      if (emptyView && popView) {
+        if (t.count === 0) {
+          emptyView.style.display = 'block';
+          popView.style.display = 'none';
+        } else {
+          emptyView.style.display = 'none';
+          popView.style.display = 'block';
+
+          // Render Product Rows matching Screenshot 2
+          const list = document.getElementById('cartProductList');
+          if (list) {
+            list.innerHTML = t.items.map(item => `
+              <div class="cart-product-card">
+                <div class="item-check-pill">✓</div>
+                <div class="product-img-box">${item.icon}</div>
+                <div class="cart-item-mid">
+                  <div class="cart-item-name">${item.name}</div>
+                  <div class="cart-barcode-text">|||||||||| ${item.id}</div>
+                  <div class="stepper-box">
+                    <button class="stepper-btn" onclick="changeItemQuantity('${item.id}', -1)" aria-label="Decrease quantity">−</button>
+                    <span class="stepper-val">${item.qty}</span>
+                    <button class="stepper-btn" onclick="changeItemQuantity('${item.id}', 1)" aria-label="Increase quantity">+</button>
+                  </div>
+                </div>
+                <div class="cart-item-right">
+                  <div class="item-unit-calc">
+                    <span>${money(item.price)} × ${item.qty}</span>
+                    <span class="item-delete-cross" onclick="deleteCartItem('${item.id}')" title="Remove item">✕</span>
+                  </div>
+                  <div class="item-total-price">${money(item.price * item.qty)}</div>
+                </div>
+              </div>
+            `).join('');
+          }
+
+          document.getElementById('summarySubtotal').textContent = money(t.subtotal);
+          document.getElementById('summaryDiscount').textContent = `-${money(t.discount)}`;
+          document.getElementById('summaryTaxes').textContent = money(t.taxes);
+          document.getElementById('summaryGrandTotal').textContent = money(t.grandTotal);
+          document.getElementById('modalPayTotalAmount').textContent = money(t.grandTotal);
+
+          // Detailed Breakdown updates
+          const cGst = (t.taxes / 2).toFixed(2);
+          const sGst = (t.taxes / 2).toFixed(2);
+          document.getElementById('breakdownGross').textContent = `₹${t.subtotal.toFixed(2)}`;
+          document.getElementById('breakdownCGST').textContent = `₹${cGst}`;
+          document.getElementById('breakdownSGST').textContent = `₹${sGst}`;
+          document.getElementById('breakdownDisc').textContent = `-₹${t.discount.toFixed(2)}`;
+        }
+      }
+
+      // Fast-Pass Screen Updates
+      document.getElementById('passPaidTotal').textContent = `${money(t.grandTotal > 0 ? t.grandTotal : 380)} PAID`;
+      document.getElementById('passItemCount').textContent = `${t.count > 0 ? t.count : 3} items`;
+      document.getElementById('passOrderNum').textContent = `#${state.orderNumber}`;
+      document.getElementById('passTokenCode').textContent = state.tokenCode;
+      document.getElementById('passCounterDigits').textContent = state.assignedCounter;
+      document.getElementById('passCounterTitle').textContent = `Proceed to Counter ${state.assignedCounter} for verification`;
+      document.getElementById('adminActiveOrderLabel').textContent = `#${state.orderNumber}`;
+    }
+
+    /* =========================================================================
+       9. SIMULATOR BARCODE DRAWER & SEARCH
+       ========================================================================= */
+    function initSimulatorDrawer() {
+      const container = document.getElementById('simulatorBarcodesContainer');
+      if (!container) return;
+
+      container.innerHTML = PRODUCT_CATALOG.slice(0, 6).map(p => `
+        <button style="background:var(--surface-subtle); border:1.5px solid var(--border); border-radius:8px; padding:6px; text-align:left; display:flex; flex-direction:column; gap:2px;" onclick="handleBarcodeScanned('${p.id}')">
+          <span style="font-size:11px; font-weight:700; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.icon} ${p.name.split(' ')[0]}</span>
+          <span style="font-size:10px; font-weight:800; color:var(--primary); font-family:var(--font-mono);">${money(p.price)}</span>
+        </button>
+      `).join('');
+    }
+
+    function simulateRandomScan() {
+      const p = PRODUCT_CATALOG[Math.floor(Math.random() * PRODUCT_CATALOG.length)];
+      handleBarcodeScanned(p.id);
+    }
+
+    function openManualSearchModal() {
+      document.getElementById('searchModalOverlay').style.display = 'flex';
+      renderSearchResults('');
+      setTimeout(() => {
+        const inp = document.getElementById('catalogSearchInput');
+        if (inp) inp.focus();
+      }, 100);
+    }
+
+    function closeSearchModal(event) {
+      document.getElementById('searchModalOverlay').style.display = 'none';
+    }
+
+    function onSearchQueryChange(q) {
+      renderSearchResults(q);
+    }
+
+    function renderSearchResults(query = '') {
+      const list = document.getElementById('searchResultsList');
+      if (!list) return;
+      const lower = query.toLowerCase().trim();
+      const filtered = PRODUCT_CATALOG.filter(p => p.name.toLowerCase().includes(lower) || p.id.includes(lower) || p.category.toLowerCase().includes(lower));
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No matching items found</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(p => `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--surface-subtle); border-radius:10px; border:1px solid var(--border);">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:22px;">${p.icon}</span>
+            <div>
+              <div style="font-weight:800; font-size:13.5px;">${p.name}</div>
+              <div style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${p.id} · ${money(p.price)}</div>
+            </div>
+          </div>
+          <button class="btn-orange-cta" style="padding:6px 14px; font-size:12px; min-height:34px; width:auto;" onclick="addProductToCart(PRODUCT_CATALOG.find(x => x.id === '${p.id}')); closeSearchModal();">
+            + Add
+          </button>
+        </div>
+      `).join('');
+    }
+
+    /* =========================================================================
+       10. CAMERA BARCODE SCANNER
+       ========================================================================= */
+    function initCameraScanner() {
+      const statusLabel = document.getElementById('scannerStatusLabel');
+      if (!window.Html5Qrcode) {
+        if (statusLabel) statusLabel.textContent = 'Camera active (Demo)';
+        return;
+      }
+
+      if (state.scannerInstance) {
+        state.scannerInstance.stop().catch(() => {});
+        state.scannerInstance = null;
+      }
+
+      const readerEl = document.getElementById('reader');
+      if (!readerEl || readerEl.offsetParent === null) return;
+
+      const scanner = new Html5Qrcode('reader');
+      state.scannerInstance = scanner;
+
+      scanner.start(
+        { facingMode: 'environment' },
+        { fps: 15, qrbox: { width: 240, height: 180 } },
+        (decoded) => handleBarcodeScanned(decoded),
+        () => {}
+      ).then(() => {
+        if (statusLabel) statusLabel.textContent = 'Camera ready';
+      }).catch(err => {
+        console.warn('Camera fallback to simulation mode:', err);
+        if (statusLabel) statusLabel.textContent = 'Simulator active';
+        state.scannerInstance = null;
+      });
+    }
+
+    let lastScanned = null;
+    let lastScanTime = 0;
+
+    function handleBarcodeScanned(barcode) {
+      if (!barcode) return;
+      const code = String(barcode).trim();
+      const now = Date.now();
+      if (code === lastScanned && (now - lastScanTime) < 1600) return;
+      lastScanned = code;
+      lastScanTime = now;
+
+      const matched = PRODUCT_CATALOG.find(p => p.id === code);
+      if (matched) {
+        addProductToCart(matched);
+      } else {
+        // Unknown barcode fallback
+        addProductToCart({
+          id: code,
+          name: `Item #${code.slice(-4)}`,
+          price: 45,
+          category: 'Grocery',
+          icon: '📦'
+        });
+      }
+    }
+
+    function toggleTorch() {
+      state.isTorchOn = !state.isTorchOn;
+      const torchBtn = document.getElementById('torchBtnEl');
+      if (torchBtn) {
+        if (state.isTorchOn) {
+          torchBtn.classList.add('active');
+          showToast('Torch flashlight enabled 💡');
+        } else {
+          torchBtn.classList.remove('active');
+          showToast('Torch flashlight off');
+        }
+      }
+    }
+
+    /* =========================================================================
+       11. CHECKOUT & FAST-PASS GENERATION
+       ========================================================================= */
+    function openPaymentSheet() {
+      const t = calculateTotals();
+      if (t.count === 0) {
+        showToast('Your cart is empty');
+        return;
+      }
+      document.getElementById('paymentModalOverlay').style.display = 'flex';
+    }
+
+    function closePaymentSheet(event) {
+      document.getElementById('paymentModalOverlay').style.display = 'none';
+    }
+
+    function selectPayOption(el) {
+      document.querySelectorAll('.pay-method-option').forEach(opt => {
+        opt.classList.remove('selected');
+        opt.querySelector('span:last-child').textContent = '›';
+        opt.querySelector('span:last-child').style.color = 'var(--text-subtle)';
+      });
+      el.classList.add('selected');
+      const check = el.querySelector('span:last-child');
+      check.textContent = '✓';
+      check.style.color = 'var(--primary)';
+      state.selectedPaymentMethod = el.dataset.method;
+    }
+
+    async function processCustomerCheckout() {
+      const btn = document.getElementById('btnConfirmPayAction');
+      if (btn.disabled) return; // Prevent double submission
+      btn.disabled = true;
+      btn.innerHTML = '⚡ Authorizing Payment...';
+
+      closePaymentSheet();
+      const t = calculateTotals();
+
+      // Generate Order with Backend
+      let backendOrder = null;
+      try {
+        backendOrder = await apiFetch('/api/v1/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            customer_identifier: 'Customer #' + Math.floor(1000 + Math.random() * 9000),
+            payment_method: state.selectedPaymentMethod,
+            payment_status: 'PAID',
+            preferred_counter: '03',
+            items: t.items.map(i => ({
+              product_barcode: i.id,
+              product_name: i.name,
+              unit_price: i.price,
+              quantity: i.qty
+            }))
+          })
+        });
+      } catch (e) { }
+
+      btn.disabled = false;
+      btn.innerHTML = `Pay <span id="modalPayTotalAmount">${money(t.grandTotal)}</span> & Generate Fast-Pass →`;
+
+      if (backendOrder) {
+        state.orderNumber = backendOrder.order_number;
+        state.assignedCounter = backendOrder.assigned_counter_number || '03';
+        state.tokenCode = 'SF-' + state.orderNumber.replace('FS-', '');
+      } else {
+        state.orderNumber = 'SF-78451236';
+        state.tokenCode = 'SF-8FD9';
+        state.assignedCounter = '03';
+      }
+
+      // Render Dynamic QR Code
+      const qrContainer = document.getElementById('qrcodeRenderCanvas');
+      qrContainer.innerHTML = '';
+
+      if (window.QRCode) {
+        new QRCode(qrContainer, {
+          text: JSON.stringify({
+            orderNumber: state.orderNumber,
+            token: state.tokenCode,
+            counter: state.assignedCounter,
+            total: t.grandTotal > 0 ? t.grandTotal : 380,
+            status: 'PAID'
+          }),
+          width: 180,
+          height: 180,
+          colorDark: '#0F172A',
+          colorLight: '#FFFFFF',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      playAudioTone('success');
+      if (window.confetti) {
+        window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.65 } });
+      }
+
+      navigateTo('screen-success');
+    }
+
+    /* =========================================================================
+       12. CASHIER POS VERIFICATION & DIGITAL RECEIPT
+       ========================================================================= */
+    function verifyCurrentCustomerToken() {
+      playAudioTone('success');
+      const t = calculateTotals();
+      const summaryBox = document.getElementById('adminVerifiedItemsSummary');
+      const itemsText = t.items.map(i => `• ${i.qty}× ${i.name} (${money(i.price * i.qty)})`).join('<br>');
+      summaryBox.innerHTML = `<b>Customer:</b> Order #${state.orderNumber}<br><b>Verified Items:</b><br>${itemsText}<br><b>Total Paid:</b> ${money(t.grandTotal > 0 ? t.grandTotal : 380)} via UPI`;
+      
+      document.getElementById('adminDetailBox').style.display = 'none';
+      document.getElementById('adminVerifiedResultBox').style.display = 'block';
+      showToast(`Order #${state.orderNumber} Verified ✓`);
+    }
+
+    function adminReleaseCustomer() {
+      document.getElementById('adminDetailBox').style.display = 'block';
+      document.getElementById('adminVerifiedResultBox').style.display = 'none';
+      showToast('Customer released for exit. Ready for next customer.');
+    }
+
+    function showReceiptModal() {
+      const t = calculateTotals();
+      document.getElementById('receiptStoreName').textContent = state.selectedStore.toUpperCase();
+      document.getElementById('receiptOrderNum').textContent = `#${state.orderNumber}`;
+      document.getElementById('receiptCounterName').textContent = `Counter ${state.assignedCounter} (Express)`;
+      document.getElementById('receiptDateTime').textContent = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+      document.getElementById('receiptSubtotal').textContent = money(t.subtotal);
+      document.getElementById('receiptDiscount').textContent = `-${money(t.discount)}`;
+      document.getElementById('receiptTaxes').textContent = money(t.taxes);
+      document.getElementById('receiptGrandTotal').textContent = money(t.grandTotal > 0 ? t.grandTotal : 380);
+
+      const itemsList = document.getElementById('receiptItemsList');
+      if (itemsList) {
+        itemsList.innerHTML = t.items.map(i => `
+          <div class="receipt-row">
+            <span>${i.qty}× ${i.name}</span>
+            <span>${money(i.price * i.qty)}</span>
+          </div>
+        `).join('');
+      }
+      document.getElementById('receiptModalOverlay').style.display = 'flex';
+    }
+
+    function closeReceiptModal(event) {
+      document.getElementById('receiptModalOverlay').style.display = 'none';
+    }
+
+    function openInfoModal() {
+      document.getElementById('infoModalOverlay').style.display = 'flex';
+    }
+
+    function closeInfoModal(event) {
+      document.getElementById('infoModalOverlay').style.display = 'none';
+    }
+
+    /* =========================================================================
+       13. TOAST & INITIAL SETUP
+       ========================================================================= */
+    let toastTimer = null;
+    function showToast(msg, showUndo = false) {
+      const toast = document.getElementById('globalToastPill');
+      const text = document.getElementById('toastText');
+      const undoBtn = document.getElementById('toastUndoBtn');
+      text.textContent = msg;
+      undoBtn.style.display = showUndo ? 'inline' : 'none';
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, showUndo ? 3500 : 2200);
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Restore selected store
+      const storeSelect = document.getElementById('storeSelectEl');
+      if (storeSelect) {
+        for (let i = 0; i < storeSelect.options.length; i++) {
+          if (storeSelect.options[i].text === state.selectedStore) {
+            storeSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+      document.getElementById('storeNameText').textContent = state.selectedStore;
+
+      // Restore bell audio icon
+      document.getElementById('headerBellBtn').textContent = state.audioEnabled ? '🔔' : '🔕';
+
+      initSimulatorDrawer();
+      render();
+
+      // Initialize dynamic sliding navigation pill indicator
+      setTimeout(() => {
+        syncNavActiveState(state.currentScreen || 'screen-user-home');
+      }, 50);
+
+      window.addEventListener('resize', () => {
+        const activeBtn = document.querySelector(`.nav-btn[data-screen="${state.currentScreen}"]`);
+        if (activeBtn) updateNavIndicator(activeBtn, false);
+      });
+
+      if (document.fonts) {
+        document.fonts.ready.then(() => {
+          const activeBtn = document.querySelector(`.nav-btn[data-screen="${state.currentScreen}"]`);
+          if (activeBtn) updateNavIndicator(activeBtn, false);
+        });
+      }
+
+      // Generate initial QR code on success screen
+      const qrContainer = document.getElementById('qrcodeRenderCanvas');
+      if (qrContainer && window.QRCode) {
+        new QRCode(qrContainer, {
+          text: JSON.stringify({ orderNumber: 'SF-78451236', token: 'SF-8FD9', counter: '03', total: 380, status: 'PAID' }),
+          width: 180,
+          height: 180,
+          colorDark: '#0F172A',
+          colorLight: '#FFFFFF',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>
