@@ -2077,20 +2077,19 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 100;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid #334155;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: var(--radius-full);
-      padding: 4px 6px;
+      padding: 3px 4px;
       display: flex;
       align-items: center;
       gap: 2px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
-      max-width: 96vw;
-      overflow-x: auto;
-      overflow-y: hidden;
-      scrollbar-width: none;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      max-width: calc(100vw - 20px);
+      width: max-content;
+      overflow: hidden;
       isolation: isolate;
     }
 
@@ -2100,38 +2099,47 @@
 
     .nav-indicator-pill {
       position: absolute;
-      top: 4px;
+      top: 3px;
       left: 0;
-      height: calc(100% - 8px);
+      height: calc(100% - 6px);
       width: 0;
       background: var(--primary);
       border-radius: var(--radius-full);
-      box-shadow: 0 2px 10px var(--primary-glow);
+      box-shadow: 0 2px 8px var(--primary-glow);
       pointer-events: none;
       z-index: 1;
       opacity: 0;
       transform: translate3d(0, 0, 0);
-      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+      transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), width 0.26s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
       will-change: transform, width;
     }
 
     .quick-demo-bar button.nav-btn {
       position: relative;
       z-index: 2;
-      color: #CBD5E1;
-      font-size: 11.5px;
+      color: #94A3B8;
+      font-size: 11px;
       font-weight: 700;
-      padding: 6px 11px;
+      padding: 5px 9px;
       border-radius: var(--radius-full);
       white-space: nowrap;
-      min-height: 32px;
+      min-height: 30px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       background: transparent;
       border: none;
       cursor: pointer;
-      transition: color 0.2s ease;
+      transition: color 0.18s ease;
+      letter-spacing: -0.01em;
+    }
+
+    @media (max-width: 380px) {
+      .quick-demo-bar button.nav-btn {
+        padding: 4px 7px;
+        font-size: 10px;
+        min-height: 28px;
+      }
     }
 
     .quick-demo-bar button.nav-btn:hover {
@@ -2142,6 +2150,7 @@
       color: #FFFFFF;
       font-weight: 800;
     }
+
 
     /* Global Toast Notification */
     .toast-pill {
